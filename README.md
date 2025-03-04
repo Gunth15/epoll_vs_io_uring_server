@@ -1,2 +1,2 @@
-# epoll_vs_io_uring_server
-Testing different asynchronous server implementation API's in Linux
+# FluxC
+An async runtime written in C inspired by the go runtime/sceduler and rust futures.
