@@ -21,14 +21,14 @@ void init_rthread(int *queue_num) {
 
     if (!isEmpty(local_queue)) {
       // Run next task
-      fn func = dequeue(local_queue);
+      flux_fn func = dequeue(local_queue);
       func();
     } else {
       // attempt to work steal
       for (int i = 0; i < RTHREAD_COUNT; ++i) {
         if (!isEmpty(local_queues[i])) {
           // Run next task
-          fn func = dequeue(local_queues[i]);
+          flux_fn func = dequeue(local_queues[i]);
           func();
         }
       }

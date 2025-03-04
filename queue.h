@@ -4,22 +4,29 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-typedef void (*fn)(); // function def
+typedef void(flux_fn)(void *); // function def
 
-// Query head must be set to -1 and the capacity to the size of the array
+// Task on queue
+typedef struct {
+  flux_fn *fn;
+  int ctxt;
+  void *args;
+} Task;
+
+// Query head & tail must be set to -1 and the capacity to the size of the array
 typedef struct {
   int capacity;
   int head;
   int tail;
-  fn *data;
+  Task **data;
 } Queue;
 
-void InitQueue(Queue *q, fn *data, unsigned capacity); // Initializes queue
-fn dequeue(Queue *q); // Dequeue from stack, Crashes program if you try to
-                      // dequeue when there is no data
-void enqueue(Queue *q, fn func); // Enqueue to stack. Crashes if you try
-                                 // to enqueue past capacity
-void *peek(Queue *q); // Peeks whats in front of the queue, returns -1 if empty.
+void InitQueue(Queue *q, Task **data, unsigned capacity); // Initializes queue
+Task *dequeue(Queue *q); // Dequeue from stack, Crashes program if you try to
+                         // dequeue when there is no data
+void enqueue(Queue *q, Task *func); // Enqueue to stack. Crashes if you try
+                                    // to enqueue past capacity
+Task *peek(Queue *q); // Peeks whats in front of the queue, returns -1 if empty.
                       // Completely safe
 bool peekRear(Queue *q); // Checks if queue is empty
 bool isEmpty(Queue *q);  // Checks of queue is full
