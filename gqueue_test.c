@@ -1,5 +1,8 @@
 #include "gqueue.h"
+#include <assert.h>
+#include <pthread.h>
 #include <stdio.h>
+#include <unistd.h>
 
 /*
  * The follwing test make sure the global queue works a expected
@@ -8,8 +11,8 @@
  * condition
  */
 
-GQueue gq;
-
+// NOTE: This test dos not make use of futire because they were implemented a
+// little afterwards
 void add(void *num) {
   int *n = (int *)num;
   *n += 1;
@@ -19,25 +22,72 @@ void sub(void *num) {
   *n -= 1;
 }
 
+void *run_task(void *_) {
+  sleep(1);
+  bool stop = false;
+  while (!stop) {
+    // Critical Section
+    global_queue_lock();
+    if (!(stop = global_isEmpty())) {
+      Task *task = global_dequeue();
+      flux_fn *fn = task->fn;
+      void *args = (int *)task->args;
+      fn(args);
+    }
+    global_queue_unlock();
+    ////////////////////
+  }
+  return NULL;
+}
+
 int main() {
 
+  // TEST 1
   int count = 0;
-  Task *data[5] = {NULL, NULL, NULL, NULL, NULL};
+  Task *data[10] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0};
 
-  InitGlobalQueue(&gq, data, 5);
+  InitGlobalQueue(data, 10);
 
   Task t1 = {add, 0, &count};
   Task t2 = {sub, 0, &count};
 
-  global_enqueue(&gq, &t1);
+  global_enqueue(&t1);
+  global_enqueue(&t2);
+  global_enqueue(&t1);
 
-  Task *task = global_dequeue(&gq);
+  Task *task;
+  flux_fn *fn;
+  void *args;
 
-  flux_fn *fn = task->fn;
-  int *args = (int *)task->args;
+  for (int i = 0; i < 3; ++i) {
+    task = global_dequeue();
+    fn = task->fn;
+    args = task->args;
+    fn(args);
+  }
 
-  fn(args);
-  printf("%d\n", count);
+  printf("Output after queueing %d\n", count);
+  assert(count == 1 && "Count was not 1");
 
-  global_queue_clean(&gq);
+  // TEST 2
+
+  global_enqueue(&t1);
+  global_enqueue(&t2);
+  global_enqueue(&t1);
+  global_enqueue(&t1);
+  global_enqueue(&t2);
+  global_enqueue(&t1);
+
+  // Make sure to cleanup before exiting
+
+  pthread_t thread_1, thread_2;
+  pthread_create(&thread_1, NULL, &run_task, NULL);
+  pthread_create(&thread_2, NULL, &run_task, NULL);
+  pthread_join(thread_1, NULL);
+  pthread_join(thread_2, NULL);
+
+  assert(count == 3 && "Count was not 3");
+  printf("Output after queueing %d\n", count);
+
+  global_queue_clean();
 }

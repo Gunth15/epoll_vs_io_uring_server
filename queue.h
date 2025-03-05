@@ -1,16 +1,16 @@
 // Fized size Circular Queue data structure written in C by C.W
 //  For the sake of simplicity, generics have been entirely avoided
 //  Change the types when needed
+#include "flux.h"
 #include <stdbool.h>
 #include <stddef.h>
-
-typedef void(flux_fn)(void *); // function def
 
 // Task on queue
 typedef struct {
   flux_fn *fn;
   int ctxt;
   void *args;
+  Future future;
 } Task;
 
 // Query head & tail must be set to -1 and the capacity to the size of the array

@@ -1,5 +1,6 @@
 #include "gqueue.h"
 #include <errno.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -7,70 +8,29 @@
  Initializes global queue.
  This will panic if it cannot inititialize the mutex locks
 */
-void InitGlobalQueue(GQueue *q, Task *data[], unsigned capacity) {
-  InitQueue(&q->q, data, capacity);
+static GQueue gq;
+void InitGlobalQueue(Task *data[], unsigned capacity) {
+  InitQueue(&gq.q, data, capacity);
 
   // Create locks for enque-ing and dequeue-ing
-  if (pthread_mutex_init(&q->enqueue_lock, NULL) != 0) {
-    fprintf(stderr, "Error initializing global queue lock: %s",
-            strerror(errno));
-    exit(EXIT_FAILURE);
-  }
-  if (pthread_mutex_init(&q->dequeue_lock, NULL) != 0) {
+  if (pthread_mutex_init(&gq.lock, NULL) != 0) {
     fprintf(stderr, "Error initializing global queue lock: %s",
             strerror(errno));
     exit(EXIT_FAILURE);
   }
 }
 
-/*
-Locks the queue before attempting to dequeue
-This only matters if a worker thread tries to poll the global queue
-*/
-Task *global_dequeue(GQueue *gq) {
-  // CRITICAL SECTION
-  pthread_mutex_lock(&gq->dequeue_lock);
-  Task *task = dequeue(&gq->q);
-  pthread_mutex_unlock(&gq->dequeue_lock);
-  ///////////////////
-  return task;
-}
+Task *global_dequeue() { return dequeue(&gq.q); }
 
-/*
- * Locks the queue before enqueue-ing data
- * This stops mutltiple threads from adding to the queue if nested asyc calls
- * are made.
- */
-void global_enqueue(GQueue *gq, Task *item) {
-  // CRITICAL SECTION
-  pthread_mutex_lock(&gq->enqueue_lock);
-  enqueue(&gq->q, item);
-  pthread_mutex_unlock(&gq->enqueue_lock);
-  ///////////////////
-}
+void global_enqueue(Task *item) { enqueue(&gq.q, item); }
 
-// better safe then sorry locking
-bool global_isEmpty(GQueue *gq) {
-  // CRITICAL SECTION
-  pthread_mutex_lock(&gq->enqueue_lock);
-  bool empty = isEmpty(&gq->q);
-  pthread_mutex_unlock(&gq->enqueue_lock);
-  ///////////////////
-  return empty;
-}
+bool global_isEmpty() { return isEmpty(&gq.q); }
 
-// better safe then sorry locking
-bool global_isFull(GQueue *gq) {
-  // CRITICAL SECTION
-  pthread_mutex_lock(&gq->dequeue_lock);
-  bool full = isFull(&gq->q);
-  pthread_mutex_unlock(&gq->dequeue_lock);
-  ///////////////////
-  return full;
-}
+bool global_isFull() { return isFull(&gq.q); }
+
+// Muex control wrappers
+void global_queue_lock() { pthread_mutex_lock(&gq.lock); }
+void global_queue_unlock() { pthread_mutex_unlock(&gq.lock); }
 
 // Cleans the queue mutexes create dby the queue
-void global_queue_clean(GQueue *gq) {
-  pthread_mutex_destroy(&gq->enqueue_lock);
-  pthread_mutex_destroy(&gq->dequeue_lock);
-}
+void global_queue_clean() { pthread_mutex_destroy(&gq.lock); }
