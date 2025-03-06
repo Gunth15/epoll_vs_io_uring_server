@@ -1,5 +1,5 @@
 // API for accesing the gloabl queue
-#include <pthread.h>
+#include <semaphore.h>
 #include <stdbool.h>
 #include <stdlib.h>
 // The status realated to poll calls
@@ -12,8 +12,7 @@ typedef void(flux_fn)(void *);
 typedef struct {
   void *ret;
   Status poll;
-  pthread_cond_t *cond;
-  pthread_mutex_t *mut;
+  sem_t sem;
 } Future;
 
 // Task on queue
@@ -35,9 +34,10 @@ typedef struct {
   Queue q;
   pthread_mutex_t lock;
 } GQueue; // Global queue is just a queue with a mutex lol
+
 //////////////////////FLUX//////////////////////////////////////////////
 // How a async function is declared
-void flux_async(Future *f, flux_fn func, void *args);
+bool flux_async(Future *f, flux_fn func, void *args);
 // Declares the value returned by the future
 void flux_return(Future *f, void *ret);
 // Tells the calling thread to wait for output of future
