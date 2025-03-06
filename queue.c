@@ -1,6 +1,5 @@
 // Static Queue data structure written in C by C.W
-
-#include "queue.h"
+#include "flux_scheduler.h"
 #include <stdio.h>
 #include <stdlib.h>
 

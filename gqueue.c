@@ -1,4 +1,4 @@
-#include "gqueue.h"
+#include "flux_scheduler.h"
 #include <errno.h>
 #include <pthread.h>
 #include <stdio.h>

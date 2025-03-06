@@ -1,4 +1,4 @@
-#include "gqueue.h"
+#include "flux_scheduler.h"
 #include <assert.h>
 #include <pthread.h>
 #include <stdio.h>
@@ -48,8 +48,8 @@ int main() {
 
   InitGlobalQueue(data, 10);
 
-  Task t1 = {add, 0, &count};
-  Task t2 = {sub, 0, &count};
+  Task t1 = {add, &count, 0};
+  Task t2 = {sub, &count, 0};
 
   global_enqueue(&t1);
   global_enqueue(&t2);

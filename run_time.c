@@ -1,4 +1,4 @@
-#include "queue.h"
+#include "flux_scheduler.h"
 #include <pthread.h>
 #include <unistd.h>
 #define RTHREAD_COUNT 3
