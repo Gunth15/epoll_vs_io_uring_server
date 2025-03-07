@@ -5,7 +5,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-Future test_f = {0};
 pthread_t thread_1;
 /*
  * This file test the Future implemntation and
@@ -16,10 +15,15 @@ pthread_t thread_1;
  * Test 3: Testing the output of task
  */
 
-void add(void *num) {
+void add(void *num, Future *f) {
   int *n = (int *)num;
   *n += 3;
-  flux_return(&test_f, n);
+  flux_return(f, n);
+}
+void sub(void *num, Future *f) {
+  int *n = (int *)num;
+  *n -= 1;
+  flux_return(f, n);
 }
 
 void *run_task(void *_) {
@@ -35,7 +39,8 @@ void *run_task(void *_) {
 
       flux_fn *fn = task->fn;
       void *args = (int *)task->args;
-      fn(args);
+      Future *fut = task->future;
+      fn(args, fut);
       free(task);
       printf("Done\n");
 
@@ -57,15 +62,23 @@ int main() {
   pthread_create(&thread_1, NULL, &run_task, NULL);
 
   // TEST 1
-  flux_async(&test_f, add, &count);
+  Future *fut = flux_async(add, &count);
 
   // TEST 2
   printf("Doing other work while waiting...\n");
   sleep(1);
-  int *ret = flux_await(&test_f);
-  printf("%d\n", *ret);
+  int *ret = flux_await(fut);
 
-  // assert(count == 3 && "Count was not 3");
-  // printf("Output after queueing %d\n", count);
+  // TEST 3
+  printf("Output after async function is %d\n", *ret);
+  assert(*ret == 3 && "Count was not 3");
+
+  // BONUS
+  fut = flux_async(sub, ret);
+  ret = flux_await(fut);
+  printf("Output after async function is %d\n", *ret);
+  assert(*ret == 2 && "Count was not 1");
+
+  printf("Orginal count was %d\n", count);
   global_queue_clean();
 }

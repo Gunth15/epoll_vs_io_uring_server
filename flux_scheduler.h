@@ -5,9 +5,6 @@
 // The status realated to poll calls
 typedef enum { PENDING = 0, READY = 1 } Status;
 
-// function def
-typedef void(flux_fn)(void *);
-
 // What is to be returned from the flux function
 typedef struct {
   void *ret;
@@ -15,12 +12,15 @@ typedef struct {
   sem_t sem;
 } Future;
 
+// function def
+typedef void(flux_fn)(void *, Future *);
+
 // Task on queue
 typedef struct {
   flux_fn *fn;
   void *args;
   int ctxt;
-  Future future;
+  Future *future;
 } Task;
 
 typedef struct {
@@ -37,11 +37,13 @@ typedef struct {
 
 //////////////////////FLUX//////////////////////////////////////////////
 // How a async function is declared
-bool flux_async(Future *f, flux_fn func, void *args);
+Future *flux_async(flux_fn func, void *args);
 // Declares the value returned by the future
 void flux_return(Future *f, void *ret);
 // Tells the calling thread to wait for output of future
 void *flux_await(Future *f);
+// Destroys the flux Future. Make sure to copy any m
+void flux_destroy_future(Future *f);
 ////////////////////////////////////////////////////////////////////////
 
 /////////////////////////////QUEUE/////////////////////////////////////////////
